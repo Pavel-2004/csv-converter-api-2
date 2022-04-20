@@ -1,8 +1,8 @@
 //change this in the case that other columns will be added into the new format
 var header = ["Account #",	'Trade date',	'Settlement date',	'Symbol',	'Exchange',	'Security name',	'TE type',	'Broker type',	'#units',	'$price/unit',	'Amount']
 const exchanges = ['TSX', 'TSXV', 'CSE', 'NASDAQ', 'NYSE', 'ARCA', 'NEO']
-const apiFormatToSystem =  {"TO": ["TSX"], "V": ["TSXV"], "CN": ["CSE"], "US": ["NASDAQ", "NYSE", "ARCA"], "NEO": ["NEO"]}
-const systemToApiFormat = {"TSX":"TO", "TSXV":"V", "CSE":"CN", "NASDAQ":"US", "NYSE":"US", "ARCA":"US", "NEO": "NEO"}
+const apiFormatToSystem =  {"TO": ["TSX"], "V": ["TSXV"], "CN": ["CSE"], "US": ["US"], "NEO": ["NEO"]}
+const systemToApiFormat = {"TSX":"TO", "TSXV":"V", "CSE":"CN", "US":"US", "NEO": "NEO"}
 const apiKey = "625b5df8a34626.35549490"
 
 
@@ -68,7 +68,12 @@ function mapToProperFormat(currentData, args){
     for (let i = 0; i < currentData.length; i++) {
         for (let j = 0; j < currentData[i].length; j++) {
             if(Object.keys(args).includes(String(j))){
-                final[i][args[j]] = currentData[i][j]
+                //due to the API not specifying exactly what stock exchange is from the US it defaults to US which temporarily is put as nothing
+                if(currentData[i][j] == "US"){
+                    final[i][args[j]]
+                } else{
+                    final[i][args[j]] = currentData[i][j]
+                }
             }
         }
     }
@@ -162,11 +167,11 @@ function getTickerFromDescription(name){
         wordCount+=1
 
         for (let i = 0; i < results.length; i++) {
-
-            if((results[i]["Name"].toUpperCase()).includes(word)){
+            if((results[i]["Name"].toUpperCase()).includes(word.toUpperCase())){
                 tempResult.push(results[i])
             }
         }
+
 
         if(tempResult.length > 0){
             results = tempResult
@@ -174,6 +179,8 @@ function getTickerFromDescription(name){
             break
         }
     }
+
+
 
 
 
@@ -221,6 +228,29 @@ function getTickerFromDescription(name){
     return info
 }
 
+function getTickerFromTicker(name){
+    finalRes = []
+    $.ajax({
+        url: "https://eodhistoricaldata.com/api/search/" + name + "?api_token=" + apiKey,
+        type: "get",
+        async: false,
+        dataType: "json",
+        success: function (res){
+            for (let i = 0; i < res.length; i++) {
+                currentExchangeInfo = checkExchangeCorrect(res[i]["Exchange"])
+                if(res[i]["Code"] == name && currentExchangeInfo["contains"]){
+                    tempElement = []
+                    tempElement.push(res[i]["Code"])
+                    tempElement.push(convertExchangeFromApiFormat(res[i]["Exchange"]))
+                    tempElement.push(res[i]["Name"])
+                    finalRes.push(tempElement)
+                }
+            }
+        }
+    })
+    return finalRes
+}
+
 
 function getSecurityNameFromTicker(ticker, exchange){
     exchange = {}
@@ -252,11 +282,12 @@ function optionVisualizer(optionInfo){
     document.getElementById("infoContainer").classList.remove("d-none")
     document.getElementById("infoHolder").innerHTML = ""
     document.getElementById("finalizeButton").setAttribute("onclick", `finalizeOptions()`)
-    importantOptions = optionInfo
-    for (let i = 0; i < optionInfo.length; i++) {
-        //index of info (all trading logs) : id of selector
-        optionPointers[i] = "option" + i
-        element = `
+    if(selected == "TD"){
+        importantOptions = optionInfo
+        for (let i = 0; i < optionInfo.length; i++) {
+            //index of info (all trading logs) : id of selector
+            optionPointers[i] = "option" + i
+            element = `
             <div class="row justify-content-center border" style="margin-top: 10px;">
                     <div class="col-3">
                         <p class="text-center">${optionInfo[i][13]}</p>
@@ -268,33 +299,114 @@ function optionVisualizer(optionInfo){
                     </div>
                 </div>
         `
-        document.getElementById("infoHolder").innerHTML += element
-        for (let j = 0; j < Object.keys(optionInfo[i][14]).length; j++) {
-            option = document.createElement("option")
-            option.value = Object.keys(optionInfo[i][14])[j]
-            option.innerText = Object.keys(optionInfo[i][14])[j]
-            if(j == 0){
-                document.getElementById("option" + i).value = Object.keys(optionInfo[i][14])[j]
+            document.getElementById("infoHolder").innerHTML += element
+            for (let j = 0; j < Object.keys(optionInfo[i][14]).length; j++) {
+                option = document.createElement("option")
+                option.value = Object.keys(optionInfo[i][14])[j]
+                option.innerText = Object.keys(optionInfo[i][14])[j]
+                if(j == 0){
+                    document.getElementById("option" + i).value = Object.keys(optionInfo[i][14])[j]
+                }
+                document.getElementById("option" + i).append(option)
             }
-            document.getElementById("option" + i).append(option)
+        }    
+    } else if(selected == "RBC"){
+        importantOptions = optionInfo
+        for (let i = 0; i < optionInfo.length; i++) {
+            optionPointers[i] = "option" + i
+            element = `
+            <div class="row justify-content-center border" style="margin-top: 10px;">
+                    <div class="col-3">
+                        <p class="text-center">${optionInfo[i][14]}</p>
+                    </div>
+                    <div class="col-1"></div>
+                    <div class="col-5 ">
+                        <select id="${'option' + i}" class="form-control">
+                        </select>
+                    </div>
+                </div>
+            `
+            document.getElementById("infoHolder").innerHTML += element
+            for (let j = 0; j < Object.keys(optionInfo[i][15]).length; j++) {
+                option = document.createElement("option")
+                option.value = Object.keys(optionInfo[i][15])[j]
+                option.innerText = Object.keys(optionInfo[i][15])[j]
+                if(j == 0){
+                    document.getElementById("option" + i).value = Object.keys(optionInfo[i][15])[j]
+                }
+                document.getElementById("option" + i).append(option)
+            }
+
+        }
+    } else if(selected == "questrade"){
+        importantOptions = optionInfo
+        for (let i = 0; i < optionInfo.length; i++) {
+            optionPointers[i] = "option" + i
+            console.log(optionInfo[i])
+            element = `
+            <div class="row justify-content-center border" style="margin-top: 10px;">
+                    <div class="col-3">
+                        <p class="text-center">${optionInfo[i][17]}</p>
+                    </div>
+                    <div class="col-1"></div>
+                    <div class="col-5 ">
+                        <select id="${'option' + i}" class="form-control">
+                        </select>
+                    </div>
+                </div>
+            `
+            document.getElementById("infoHolder").innerHTML += element
+            for (let j = 0; j < Object.keys(optionInfo[i][18]).length; j++) {
+                option = document.createElement("option")
+                option.value = Object.keys(optionInfo[i][18])[j]
+                option.innerText = Object.keys(optionInfo[i][18])[j]
+                if(j == 0){
+                    document.getElementById("option" + i).value = Object.keys(optionInfo[i][15])[j]
+                }
+                document.getElementById("option" + i).append(option)
+            }
+
         }
     }
+    
 }
 
 
 function finalizeOptions(){
     output = []
-    console.log(optionPointers)
-    for (let i = 0; i < importantOptions.length; i++) {
-        temp = importantOptions[i]
-        console.log(optionPointers[i])
-        correntExchange = document.getElementById(optionPointers[i]).value
-        correctSymbol = importantOptions[i][14][correntExchange]
-        temp.push(correntExchange)
-        temp.push(correctSymbol)
-        output.push(temp)
+    if(selected == "TD"){
+        for (let i = 0; i < importantOptions.length; i++) {
+            temp = importantOptions[i]
+            correntExchange = document.getElementById(optionPointers[i]).value
+            correctSymbol = importantOptions[i][14][correntExchange]
+            temp.push(correntExchange)
+            temp.push(correctSymbol)
+            output.push(temp)
+        }
+        mapToProperFormat(output, {9:0, 0:1, 1:2, 16:3, 15:4, 13:5, 4:6, 3:7, 5:8, 6:9, 8:10})
+    } else if(selected == "RBC"){
+        for (let i = 0; i < importantOptions.length; i++) {
+            temp = importantOptions[i]
+            correntExchange = document.getElementById(optionPointers[i]).value
+            correctSymbol = importantOptions[i][15][correntExchange]
+            temp.push(correntExchange)
+            temp.push(correctSymbol)
+            output.push(temp)
+        }
+        mapToProperFormat(output, {8:0, 0:1, 7:2, 17:3, 16:4, 14:5, 1:6, 2:7, 5:8, 6:9, 9:10})
+    } else if(selected == "questrade"){
+        for (let i = 0; i < importantOptions.length; i++) {
+            temp = importantOptions[i]
+            correntExchange = document.getElementById(optionPointers[i]).value
+            correctSymbol = importantOptions[i][18][correntExchange]
+            temp.push(correctSymbol)
+            temp.push(correntExchange)
+            output.push(temp)
+        }
+        console.log(output)
+        mapToProperFormat(output, {13:0, 0:1, 1:2, 19:3, 20:4, 17:5, 2:6, 3:7, 7:8, 8:9, 11:10})
     }
-    mapToProperFormat(output, {9:0, 0:1, 1:2, 16:3, 15:4, 13:5, 4:6, 3:7, 5:8, 6:9, 8:10})
+
     document.getElementById("infoContainer").classList.add("d-none")
     document.getElementById("inputBoxes").classList.remove("d-none")
 }
