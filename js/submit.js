@@ -50,7 +50,6 @@ function errorCase(args){
 
 
     } else if(selected == "TD"){
-        console.log(args)
 
         if(checkArrayEqual(args[3], ['Trade Date', 'Settle Date', 'Description', 'Action', 'Quantity', 'Price', 'Commission', 'Net Amount\r'])){
             return tdFilter(args)
@@ -62,10 +61,8 @@ function errorCase(args){
     } else if(selected == "RBC"){
 
         if(checkArrayEqual(args[8], ["Date", "Activity", "Symbol", "Symbol Description", "Quantity", "Price", "Settlement", "Account", "Value", "Currency", "Description"])){
-            console.log("here")
             return rbcFilter(args)
         } else{
-            console.log("nope")
             return false
         }
     }
@@ -85,7 +82,6 @@ function errorCase(args){
 
 //filtering for questrade
 function questTradeFilter(data){
-    console.log(data)
     final = []
 
     for (let i = 1; i < data.length; i++) {
@@ -117,7 +113,6 @@ function questTradeFilter(data){
                 } else if(exchange == "VN"){
                     temp.push(getSecurityNameFromTicker(symbol, 'V')["Name"])
                 } else{
-                    console.log("N/A")
                 }
             } else if(j == 3){
                 symbol = data[i][j].split('.')
@@ -154,19 +149,18 @@ function questTradeFilter(data){
         }
 
 
-a
+
 
 
         if(data[i][0]){
             temp.push(data[i][4])
-            console.log(temp)
             final.push(temp)
         }
     }
 
-
+    addOptionsToFinalFormat(final)
     //converts all of the important columns into proper format
-    return mapToProperFormat(final,{13:0, 0:1, 1:2, 4:3, 5:4, 16:5, 3:6, 2:7, 7:8, 8:9, 11:10})
+    //return mapToProperFormat(final,{13:0, 0:1, 1:2, 4:3, 5:4, 16:5, 3:6, 2:7, 7:8, 8:9, 11:10})
 }
 
 
@@ -240,8 +234,6 @@ function tdFilter(data){
         temp.push("")
         temp.push("")
         if(data[i][0]){
-            console
-            console.log(temp)
             temp.push(data[i][2])
             final.push(temp)
         }
@@ -269,7 +261,7 @@ function rbcFilter(data){
 
                 trueValue += data[i][j]
                 charCount++
-                console.log(trueValue)
+
             }
         }
 
@@ -288,14 +280,14 @@ function rbcFilter(data){
 
     }
     data = dataReal
-    console.log(data.length)
+
     final = []
-    console.log("ready")
+
     for (let i = 0; i < data.length; i++) {
         temp = []
-        console.log("here2")
+
         for (let j = 0; j < data[i].length; j++) {
-            console.log("in")
+
             //looks through every column by index and changes it based on requirements
             if(j == 0){
                 date = new Date(data[i][j])
@@ -359,8 +351,8 @@ function rbcFilter(data){
 
     }
 
-
-    return mapToProperFormat(final, {8:0, 0:1, 7:2, 3:3, 12:4, 13:5, 1:6, 2:7, 5:8, 6:9, 9:10})
+    return addOptionsToFinalFormat(final)
+    //return mapToProperFormat(final, {8:0, 0:1, 7:2, 3:3, 12:4, 13:5, 1:6, 2:7, 5:8, 6:9, 9:10})
 }
 
 
@@ -387,5 +379,46 @@ function addOptionsToFinalFormat(info){
 
         }
         return optionVisualizer(infoFinal)
+    } else if(selected == "RBC"){
+        infoFinal = []
+        for (let i = 0; i < info.length; i++) {
+            infoFinal.push(info[i])
+            tempExchangeToTicker = {}
+            if(info[i][3]){
+                results = getTickerFromTicker(info[i][3])
+                infoFinal[i].push(results[0][2])
+                for (let j = 0; j < results.length; j++) {
+                    for (let k = 0; k < results[j][1].length; k++) {
+                        tempExchangeToTicker[results[j][1][k]] = results[j][0]
+                    }
+                }
+            }
+            infoFinal[i].push(tempExchangeToTicker)
+        }
+        return optionVisualizer(infoFinal)
+
+
+    } else if(selected == "questrade"){
+        infoFinal = []
+        for (let i = 0; i < info.length; i++) {
+            infoFinal.push(info[i])
+            tempExchangeToTicker = {}
+            console.log(info[i])
+            if(info[i][4]){
+                results = getTickerFromTicker(info[i][4])
+                infoFinal[i].push(results[0][2])
+                for (let j = 0; j < results.length; j++) {
+                    for (let k = 0; k < results[j][1].length; k++) {
+                       tempExchangeToTicker[results[j][1][k]] = results[j][0]
+                    }
+                }
+            }
+            infoFinal[i].push(tempExchangeToTicker)
+        }
+        return optionVisualizer(infoFinal)
+    }
+
+    else {
+        return false
     }
 }
