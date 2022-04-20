@@ -198,13 +198,13 @@ function getTickerFromDescription(name){
     }
 
     maxCount = 0
-    selected = ""
+    selectedName = ""
 
 
     for (let i = 0; i < Object.keys(allNameCount).length; i++) {
         if(maxCount < allNameCount[Object.keys(allNameCount)[i]]) {
             maxCount = allNameCount[Object.keys(allNameCount)[i]]
-            selected = Object.keys(allNameCount)[i]
+            selectedName = Object.keys(allNameCount)[i]
         }
     }
 
@@ -282,8 +282,10 @@ function optionVisualizer(optionInfo){
     document.getElementById("infoContainer").classList.remove("d-none")
     document.getElementById("infoHolder").innerHTML = ""
     document.getElementById("finalizeButton").setAttribute("onclick", `finalizeOptions()`)
+    console.log(selected)
     if(selected == "TD"){
         importantOptions = optionInfo
+        console.log(optionInfo)
         for (let i = 0; i < optionInfo.length; i++) {
             //index of info (all trading logs) : id of selector
             optionPointers[i] = "option" + i
