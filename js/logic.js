@@ -7,6 +7,12 @@ const apiKey = "625b5df8a34626.35549490"
 
 
 
+function isNumeric(str) {
+    if (typeof str != "string") return false // we only process strings!
+    return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+        !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+}
+
 function checkExchangeCorrect(exchange){
     if(Object.keys(apiFormatToSystem).includes(exchange)){
         return {"contains": true, "tickers": apiFormatToSystem[exchange]}
@@ -45,10 +51,23 @@ function checkArrayEqual(arrayOne, arrayTwo){
 
 
 function CSVtoArray(text) {
-    final = text.split('\n').map(function (line){
-        return line.split(',')
-    })
-    return errorCase(final)
+    if(selected == "NATIONAL BANK" || selected == "VIRTUAL BROKERS"){
+        rows = text.split('\n')
+        final = []
+        for (let i = 0; i < rows.length; i++) {
+            row = rows[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/)
+            final.push(row)
+        }
+        console.log(final)
+        return errorCase(final)
+    }
+    else {
+        final = text.split('\n').map(function (line){
+            return line.split(',')
+        })
+        console.log(final)
+        return errorCase(final)
+    }
 };
 
 
@@ -150,6 +169,9 @@ function getTickerFromDescription(name){
         dataType: "json",
         success: function (res){
             results = res
+        },
+        error: function(xhr, ajaxOptions, thrownError){
+            apiErrorHandeling(xhr, ajaxOptions, thrownError)
         }
     })
 
@@ -246,6 +268,9 @@ function getTickerFromTicker(name){
                     finalRes.push(tempElement)
                 }
             }
+        },
+        error: function(xhr, ajaxOptions, thrownError){
+
         }
     })
     return finalRes
