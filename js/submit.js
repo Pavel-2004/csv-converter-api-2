@@ -21,6 +21,18 @@ function initAll(result, type){
     } else if(type == 'RBC'){
         selected = 'RBC'
         return CSVtoArray(result)
+    } else if(type == 'SCOTIA BANK'){
+        selected = 'SCOTIA BANK'
+        return CSVtoArray(result)
+    } else if(type == "CIBC"){
+        selected = 'CIBC'
+        return CSVtoArray(result)
+    } else if(type == "NATIONAL BANK"){
+        selected = "NATIONAL BANK"
+        return CSVtoArray(result)
+    } else if(type == "VIRTUAL BROKERS"){
+        selected = "VIRTUAL BROKERS"
+        return CSVtoArray(result)
     }
 
     else{
@@ -63,6 +75,32 @@ function errorCase(args){
         if(checkArrayEqual(args[8], ["Date", "Activity", "Symbol", "Symbol Description", "Quantity", "Price", "Settlement", "Account", "Value", "Currency", "Description"])){
             return rbcFilter(args)
         } else{
+            return false
+        }
+    } else if(selected == "SCOTIA BANK"){
+        if(checkArrayEqual(args[0], ["Description", "Symbol", "Transaction Date", "Settlement Date", "Account Currency", "Type", "Quantity", "Currency of Price", "Price", "Settlement Amount"])){
+            return scotiaFilter(args)
+        } else {
+
+            return false
+        }
+    } else if(selected == "CIBC"){
+        if(checkArrayEqual(args[9], ["Transaction Date", "Settlement Date", "Currency of Sub-account Held In", "Transaction Type", "Symbol", "Market", "Description", "Quantity", "Currency of Price", "Price", "Commission", "Exchange Rate", "Currency of Amount", "Amount", "Settlement Instruction", "Exchange Rate (Canadian Equivalent)", "Canadian Equivalent"])){
+            return cibcFilter(args)
+        } else {
+            return false
+        }
+    } else if(selected == "NATIONAL BANK"){
+        if(checkArrayEqual(args[0], ["Account number", "Account description","Trade date","Settlement date", "Processing date", "Market", "Symbol", "Description", "Operation", "Quantity", "Price", "Net amount", "Balance as at settlement date", "Current balance"])){
+            return nationalBankFilter(args)
+        } else {
+            return false
+        }
+    } else if (selected == "VIRTUAL BROKERS"){
+        if(checkArrayEqual(args[0], ["Account Number", "Effective Date", "Process Date", "Description", "TX Type", "Symbol", "TransactionID", "SubTransactionID", "SecurityType", "CC", "QTY", "COMSN", "Price", "Net Amount"])){
+            return virtualBankFilter(args)
+        } else {
+            console.log("Not Matching")
             return false
         }
     }
@@ -355,8 +393,243 @@ function rbcFilter(data){
     //return mapToProperFormat(final, {8:0, 0:1, 7:2, 3:3, 12:4, 13:5, 1:6, 2:7, 5:8, 6:9, 9:10})
 }
 
+function scotiaFilter(data){
+    finalData = []
+    for (let i = 1; i < data.length; i++) {
+        tempRow = []
+        for (let j = 0; j < data[i].length; j++) {
+            if(j == 2 || j == 3){
+                tempDate = new Date(data[i][j])
+                pushDate = (tempDate.getMonth() + 1) + "/" + (tempDate.getDate()) + "/" + (tempDate.getFullYear());
+                tempRow.push(pushDate)
+            } else if(j == 6 || j == 9){
+                tempNum = parseFloat(data[i][j])
+                tempNum = Math.abs(tempNum)
+                tempRow.push(tempNum)
+            } else if(j == 8){
+                total = Math.abs(parseFloat(data[i][9]))
+                qty = Math.abs(parseFloat(data[i][6]))
+                if(total == 0 || qty == 0){
+                    tempRow.push(0)
+                } else {
+                    price = total / qty
+                    tempRow.push(price.toFixed(15))
+                }
+
+            } else if(j == 5){
+                if(data[i][j] == "BUY"){
+                    tempRow.push(data[i][j])
+                } else if(data[i][j] == "SELL"){
+                    tempRow.push(data[i][j])
+                } else {
+                    tempRow.push("unallocated")
+                }
+                tempRow.push(data[i][j])
+            } else{
+                tempRow.push(data[i][j])
+            }
+        }
+        tempRow.push("")
+        tempRow.push("")
+        finalData.push(tempRow)
+    }
+
+    console.log(finalData)
+    //mapToProperFormat(finalData, {11:0, 2:1, 3:2, 1:3, 12:4, 0:5, 5:6, 6:7, 7:8, 9:9, 10:10})
+}
 
 
+function cibcFilter(data){
+    accountNum = data[0][0]
+    
+    tempData = []
+
+    //takes care of commas separating and puts them all together
+    for (let i = 10; i < data.length; i++) {
+        tempRow = []
+        if(data[i].length > 1){
+            for (let j = 0; j < data[i].length; j++) {
+                if(j == 0){
+                    tempRow.push((data[i][0]).replace('\" ', "").trim() +  " "  + (data[i][1]).replace('\"', "").trim())
+                } else  if (j == 1 || j == 3){
+
+                } else if (j == 2){
+                    tempRow.push((data[i][2]).replace('\" ', "").trim() +  " "  + (data[i][3]).replace('\"', "").trim())
+                } else {
+                    tempRow.push(data[i][j])
+                }
+            }
+            tempData.push(tempRow)
+        }
+    }
+
+    secondTempData = []
+    for (let i = 0; i < tempData.length; i++) {
+        add = ""
+        skips = []
+        tempAdd = []
+        if(tempData[i].length > 17){
+            for (let j = 7; j < tempData[i].length; j++) {
+                temp = tempData[i][j].replace('\"', "").trim()
+                if(isNumeric(temp)){
+                    add += temp
+                    skips.push(j)
+                } else {
+                    break
+                }
+            }
+            for (let j = 0; j < tempData[i].length; j++) {
+                if(!skips.includes(j)){
+                    tempAdd.push(tempData[i][j])
+                }
+            }
+            tempAdd.push(add)
+            
+        } else {
+            for (let j = 0; j < tempData[i].length; j++) {
+                if(j != 7){
+                    tempAdd.push(tempData[i][j])
+                }
+            }
+            tempAdd.push(tempData[i][7])
+        }
+        secondTempData.push(tempAdd)
+    }
+
+
+    tempData = secondTempData
+    finalData = []
+
+    for (let i = 0; i < tempData.length; i++) {
+        tempRow = []
+        for (let j = 0; j < tempData[i].length; j++) {
+            if(j == 0 || j == 1){
+                tempDate = new Date(tempData[i][j])
+                pushDate = (tempDate.getMonth() + 1) + "/" + (tempDate.getDate()) + "/" + (tempDate.getFullYear());
+                tempRow.push(pushDate)
+            } else if(j == 3){
+                if(tempData[i][j] == "Sell"){
+                    tempRow.push("SELL")
+                } else if(tempData[i][j] == "Buy"){
+                    tempRow.push("BUY")
+                } else {
+                    tempRow.push("unallocated")
+                }
+                tempRow.push(tempData[i][j])
+            } else if (j == 16){
+                tempRow.push(Math.abs(parseFloat(tempData[i][j])))
+            } else if (j == 12){
+                tempRow.push(Math.abs(parseFloat(tempData[i][j])))
+            } else if (j == 8){
+                qty = Math.abs(parseFloat(tempData[i][16]))
+                amount = Math.abs(parseFloat(tempData[i][12]))
+
+                if(qty == 0 || amount == 0){
+                    tempRow.push(0)
+                } else {
+                    tempRow.push((amount/ qty).toFixed(15))
+                }
+            } else if(j == 6){
+                tempRow.push(tempData[i][j].trim())
+            } else {
+                tempRow.push(tempData[i][j])
+            }
+        }
+        tempRow.push(accountNum)
+        tempRow.push("")
+        finalData.push(tempRow)
+    }
+
+
+    mapToProperFormat(finalData, {18:0, 0:1, 1:2, 5:3, 19:4, 7:5, 3:6, 4:7, 17:8, 9:9, 13:10})
+}
+
+function nationalBankFilter(data){
+    finalData = []
+
+    for (let i = 1; i < data.length; i++) {
+        tempRow = []
+        if(data[i].length > 1){
+            for (let j = 0; j < data[i].length; j++) {
+                if(j == 9){
+                    tempRow.push(Math.abs(parseFloat(data[i][j])))
+                } else if (j == 11){
+                    tempRow.push(Math.abs(parseFloat(data[i][j])))
+                } else if (j == 12){
+                    qty = Math.abs(parseFloat(data[i][9]))
+                    amount = Math.abs(parseFloat(data[i][12]))
+                    if(qty == 0 || amount == 0){
+                        tempRow.push(0)
+                    } else {
+                        tempRow.push((amount / qty).toFixed(15))
+                    }
+                } else if(j == 8){
+                    if(data[i][j] == "Sell") {
+                        tempRow.push("SELL")
+                    } else if(data[i][j] == "Buy"){
+                        tempRow.push("BUY")
+                    } else {
+                        tempRow.push("unallocated")
+                    }
+                    tempRow.push(data[i][j])
+                } else if(j == 0){
+                    tempRow.push((data[i][j] + " " + data[i][5]).trim())
+                }
+                else {
+                    tempRow.push(data[i][j])
+                }
+            }
+            tempRow.push("")
+            finalData.push(tempRow)
+        }
+    }
+    console.log(finalData)
+    mapToProperFormat(finalData, {0:0, 2:1, 3:2, 6:3, 15:4, 7:5, 8:6, 9:7, 10:8, 13:9, 12:10})
+}
+
+
+function virtualBankFilter(data){
+    finalData = []
+    for (let i = 1; i < data.length; i++) {
+        tempRow = []
+        if(data[i].length > 0){
+            for (let j = 0; j < data[i].length; j++) {
+                if (j == 0){
+                    tempRow.push(data[i][0] + " " + data[i][9])
+                } else if(j == 4){
+                    if(data[i][j] == "SELL"){
+                        tempRow.push("SELL")
+                    } else if(data[i][j] == "BUY"){
+                        tempRow.push("BUY")
+                    } else {
+                        tempRow.push("unallocated")
+                    }
+
+                    tempRow.push(data[i][j])
+                } else if(j == 10){
+                    tempRow.push(Math.abs(parseFloat(data[i][j].replace("$", "").replace(",", "").replace('\"', ''))))
+                } else if (j == 13){
+                    tempRow.push(Math.abs(parseFloat(data[i][j].replace("$", "").replace(",", "").replace('\"', ''))))
+                } else if (j == 12){
+                    amount = parseFloat(data[i][13].replace("$", "").replace(",", "").replace('\"', ''))
+                    qty = parseFloat(data[i][10].replace("$", "").replace(",", "").replace('\"', ''))
+                    if(amount == 0 || qty == 0){
+                        tempRow.push(0)
+                    } else {
+                        tempRow.push((amount / qty).toFixed(15))
+                    }
+                } else {
+                    tempRow.push(data[i][j])
+                }
+            }
+            tempRow.push("")
+            finalData.push(tempRow)
+        }
+    }
+
+    console.log(finalData)
+    mapToProperFormat(finalData, {0:0, 1:1, 2:2, 6:3, 15:4, 3:5, 4:6, 5:7, 11:8, 13:9, 14:10})
+}
 
 //case that options need to be added such as exchange and it can not just be converted straight into csv
 function addOptionsToFinalFormat(info){
