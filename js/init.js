@@ -3,7 +3,7 @@
 console.log("here")
 const input = document.getElementById("csv")
 const selectedTypeInput = document.getElementById("type")
-var options = ["questrade", "TD", "RBC"]
+var options = ["questrade", "TD", "RBC", "SCOTIA BANK", "CIBC", "NATIONAL BANK", "VIRTUAL BROKERS"]
 for (let i = 0; i < options.length; i++) {
     if(i == 0){
         document.getElementById("type").value = options[0]
